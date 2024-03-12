@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 
 int main() {
-    int socket_fd = socket(AF_INET, SOCK_STREAM, 0 /* IP */);
+    int socket_fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0 /* IP */);
 
     int opts = 1;
     setsockopt(socket_fd, IPPROTO_TCP, SO_REUSEADDR | SO_REUSEPORT, &opts,
@@ -18,7 +18,7 @@ int main() {
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(8001);
+    addr.sin_port = htons(8000);
     if (bind(socket_fd, (struct sockaddr *)&addr, sizeof(addr))) {
         std::cout << "Failed to bind" << std::endl;
         exit(1);
@@ -42,15 +42,23 @@ int main() {
 
     int buf_len = 1024;
     char buf[buf_len];
-    read(socket_c_fd, buf, buf_len);
-
+    // read(socket_c_fd, buf, buf_len);
+    recv(socket_c_fd, buf, buf_len, MSG_DONTWAIT);
+    //
     std::cout << buf << std::endl;
 
     char msg[] = "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World!";
-    write(socket_c_fd, msg, strlen(msg));
+    // write(socket_c_fd, msg, strlen(msg));
+    std::cout << "sending" << std::endl;
+    send(socket_c_fd, msg, strlen(msg), 0);
+    std::cout << "sent" << std::endl;
 
-    close(socket_c_fd);
-    close(socket_fd);
+    // recv(socket_c_fd, buf, buf_len, MSG_CMSG_CLOEXEC);
+
+    std::cout << "closing" << std::endl;
+
+    std::cout << "close c: " << close(socket_c_fd) << std::endl;
+    std::cout << "close c: " << close(socket_fd) << std::endl;
 
     return 0;
 }
